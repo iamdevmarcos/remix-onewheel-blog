@@ -4,16 +4,15 @@ import { json } from "@remix-run/node";
 import { getPostListings } from "~/models/post.server";
 
 type LoaderData = {
-  adminPosts: Awaited<ReturnType<typeof getPostListings>>;
+  posts: Awaited<ReturnType<typeof getPostListings>>;
 };
 
 export const loader: LoaderFunction = async () => {
-  return json<LoaderData>({ adminPosts: await getPostListings() });
+  return json<LoaderData>({ posts: await getPostListings() });
 };
 
 export default function AdminRoute() {
-  const { adminPosts } = useLoaderData() as LoaderData;
-  console.log(adminPosts);
+  const { posts } = useLoaderData() as LoaderData;
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -21,8 +20,8 @@ export default function AdminRoute() {
       <div className="grid grid-cols-4 gap-6">
         <nav className="col-span-4 md:col-span-1">
           <ul>
-            {adminPosts &&
-              adminPosts.map((post) => (
+            {posts &&
+              posts.map((post) => (
                 <li key={post.slug}>
                   <Link to={post.slug} className="text-blue-600 underline">
                     {post.title}
