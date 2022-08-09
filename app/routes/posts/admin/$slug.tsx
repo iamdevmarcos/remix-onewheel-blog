@@ -1,7 +1,7 @@
 import { Form, useActionData, useLoaderData, useTransition } from "@remix-run/react";
 import type { ActionFunction, LoaderFunction } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
-import { createPost, getPost } from "~/models/post.server";
+import { createPost, getPost, updatePost } from "~/models/post.server";
 import invariant from "tiny-invariant";
 import { requireAdminUser } from "~/session.server";
 
@@ -12,7 +12,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
     return json({})
   }
 
-  invariant(params.slug, "slug be required")
+  invariant(params.slug, "slug is required")
   const post = await getPost(params.slug)
 
   return json({ post })
@@ -52,7 +52,8 @@ export const action: ActionFunction = async ({ request, params }) => {
   if(params.slug === 'new') {
     await createPost({ title, slug, markdown });
   } else {
-    // TODO: update post
+    invariant(params.slug, "slug is required")
+    await updatePost(params.slug, { title, slug, markdown })
   }
 
   return redirect("/posts/admin");
@@ -65,7 +66,9 @@ export default function NewPostRoute() {
   const errors = useActionData() as ActionData;
 
   const transition = useTransition();
-  const isCreating = Boolean(transition.submission);
+  const isCreating = transition.submission?.formData.get('intent') === 'create';
+  const isUpdating = transition.submission?.formData.get('intent') === 'update';
+  const isNewPost = !data.post
 
   return (
     <Form method="post" key={data.post?.slug ?? 'new'}>
@@ -106,11 +109,12 @@ export default function NewPostRoute() {
         <button
           type="submit"
           name="intent"
-          value={"create"}
+          value={isNewPost ? 'create' : 'update'}
           className="rounded bg-blue-500 py-2 px-4 text-white hover:bg-blue-600 focus:bg-blue-400 disabled:bg-blue-300"
-          disabled={isCreating}
+          disabled={isCreating || isUpdating}
         >
-          {isCreating ? "Creating..." : "Create Post"}
+          {isNewPost ? (isCreating ? "Creating..." : "Create Post") : null}
+          {isNewPost ? null : (isUpdating ? 'Updating...' : 'Update')}
         </button>
       </div>
     </Form>
