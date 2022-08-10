@@ -1,4 +1,4 @@
-import { Form, useActionData, useLoaderData, useTransition } from "@remix-run/react";
+import { Form, useActionData, useCatch, useLoaderData, useTransition } from "@remix-run/react";
 import type { ActionFunction, LoaderFunction } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
 import { createPost, deletePost, getPost, updatePost } from "~/models/post.server";
@@ -20,7 +20,10 @@ export const loader: LoaderFunction = async ({ request, params }) => {
   invariant(params.slug, "slug is required")
   const post = await getPost(params.slug)
 
-  invariant(post, "post is required")
+  if(!post) {
+    throw new Response('Not Found', { status: 404 })
+  }
+  
   return json<LoaderData>({ post })
 }
 
@@ -154,4 +157,14 @@ export function ErrorBoundary({ error }: { error: Error }) {
       <pre>{error.message}</pre>
     </div>
   );
+}
+
+export function CatchBoundary() {
+  const caught = useCatch()
+  
+  if(caught.status === 404) {
+    return <div>Uh oh! This post does not exist!</div>
+  }
+
+  throw new Error('Error!!!')
 }
