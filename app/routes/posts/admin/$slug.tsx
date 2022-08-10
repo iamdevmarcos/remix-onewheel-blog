@@ -4,18 +4,24 @@ import { json, redirect } from "@remix-run/node";
 import { createPost, deletePost, getPost, updatePost } from "~/models/post.server";
 import invariant from "tiny-invariant";
 import { requireAdminUser } from "~/session.server";
+import type { Post } from "@prisma/client";
+
+type LoaderData = {
+  post?: Post
+}
 
 export const loader: LoaderFunction = async ({ request, params }) => {
   await requireAdminUser(request)
   
   if(params.slug === 'new') {
-    return json({})
+    return json<LoaderData>({})
   }
 
   invariant(params.slug, "slug is required")
   const post = await getPost(params.slug)
 
-  return json({ post })
+  invariant(post, "post is required")
+  return json<LoaderData>({ post })
 }
 
 type ActionData =
@@ -34,7 +40,7 @@ export const action: ActionFunction = async ({ request, params }) => {
   if(intent === 'delete') {
     invariant(params.slug, "slug is required")
     await deletePost(params.slug)
-    
+
     return redirect('/posts/admin')
   }
 
@@ -70,7 +76,7 @@ export const action: ActionFunction = async ({ request, params }) => {
 const inputClassName = `w-full rounded border border-gray-500 px-2 py-1 text-lg`;
 
 export default function NewPostRoute() {
-  const data = useLoaderData();
+  const data = useLoaderData() as LoaderData;
   const errors = useActionData() as ActionData;
 
   const transition = useTransition();
